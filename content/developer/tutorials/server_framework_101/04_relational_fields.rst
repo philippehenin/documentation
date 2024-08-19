@@ -10,8 +10,8 @@ of our real estate application.
 
 .. _tutorials/server_framework_101/module_structure:
 
-Module structure
-================
+Organize your module structure
+==============================
 
 As our `real_estate` module grows, you may notice that we've already created a dozen files for just
 one model, along with its menu items, actions and views. With more models on the horizon, our module
@@ -24,10 +24,6 @@ structure guidelines** that offer several benefits:
   complexity and size.
 - **Collaboration**: A standardized structure facilitates understanding among contributors and
   ensures easier integration with the Odoo ecosystem.
-
-.. seealso::
-   :ref:`Coding guidelines on module directories
-   <contributing/coding_guidelines/module_structure/directories>`
 
 .. example::
    Let's consider a possible structure for our example `product` module:
@@ -76,6 +72,10 @@ structure guidelines** that offer several benefits:
         :file:`static/img`.
       - The :file:`__init__.py` and :file:`__manifest__.py` files remain in the module's root
         directory.
+
+.. seealso::
+   :ref:`Coding guidelines on module directories
+   <contributing/coding_guidelines/module_structure/directories>`
 
 .. exercise::
 
@@ -193,8 +193,8 @@ structure guidelines** that offer several benefits:
 
 .. _tutorials/server_framework_101/many2one:
 
-Many-to-one
-===========
+Many-to-one relationships
+=========================
 
 As promised at the end of :doc:`the previous chapter <03_build_user_interface>`, we'll now expand
 our app's capabilities by adding new models to manage additional information. This expansion
@@ -210,9 +210,6 @@ representing the *many* side of the relationship. The field is represented in th
 `foreign key <https://en.wikipedia.org/wiki/Foreign_key>`_ that references the ID of the connected
 record. By convention, `Many2one` field names end with the `_id` suffix, indicating that they store
 the referenced record's ID.
-
-.. seealso::
-   :ref:`Reference documentation for Many2one fields <reference/fields/many2one>`
 
 .. example::
    In the example below, the `Selection` field of the `product` model is replaced by a `Many2one`
@@ -243,6 +240,9 @@ the referenced record's ID.
       - The relationship only needs to be declared on the *many* side to be established.
       - The `ondelete` argument on the `Many2one` field defines what happens when the referenced
         record is deleted.
+
+.. seealso::
+   :ref:`Reference documentation for Many2one fields <reference/fields/many2one>`
 
 In our real estate app, we currently have a fixed set of property types. To increase flexibility,
 let's replace the current `type` field with a many-to-one relationship to a separate model for
@@ -578,8 +578,8 @@ of the property and the salesperson managing the property.
 
 .. _tutorials/server_framework_101/one2many:
 
-One-to-many
-===========
+One-to-many relationships
+=========================
 
 After exploring how to connect multiple records to a single one with many-to-one relationships,
 let's consider their counterparts: **one-to-many relationships**. These relationships represent the
@@ -591,9 +591,6 @@ representing the *one* side of **an already existing** many-to-one relationship.
 note that `One2many` fields don't store data in the database; instead, they provide a virtual field
 that Odoo computes based on the referenced `Many2one` field. By convention, `One2many` field names
 end with the `_ids` suffix, indicating that they allow accessing the IDs of the connected records.
-
-.. seealso::
-   :ref:`Reference documentation for One2many fields <reference/fields/one2many>`
 
 .. example::
    In the example below, a `One2many` field is added to the `product.category` model to allow quick
@@ -627,6 +624,9 @@ end with the `_ids` suffix, indicating that they allow accessing the IDs of the 
       The `One2many` field must reference its `Many2one` counterpart through the `inverse_name`
       argument.
 
+.. seealso::
+   :ref:`Reference documentation for One2many fields <reference/fields/one2many>`
+
 A good use case for a one-to-many relationship in our real estate app would be to connect properties
 to a list of offers received from potential buyers.
 
@@ -646,6 +646,11 @@ to a list of offers received from potential buyers.
    #. Allow connecting properties to multiple offers.
    #. Modify the form view of properties to display offers in a new notebook page titled "Offers".
 
+   .. tip::
+      The `default` field argument expects a callable function, not a precalculated value. If you
+      mistakenly pass the result of calling the `fields.Date.today` helper function, the field's
+      default value will be set to the server's start-up time, not the correct date at runtime.
+
 .. spoiler:: Solution
 
    .. code-block:: python
@@ -660,7 +665,7 @@ to a list of offers received from potential buyers.
 
           amount = fields.Float(string="Amount", required=True)
           buyer_id = fields.Many2one(string="Buyer", comodel_name='res.partner', required=True)
-          date = fields.Date(string="Date", required=True, default=fields.Date.today())
+          date = fields.Date(string="Date", required=True, default=fields.Date.today)
           validity = fields.Integer(
               string="Validity", help="The number of days before the offer expires.", default=7
           )
@@ -774,8 +779,8 @@ to a list of offers received from potential buyers.
 
 .. _tutorials/server_framework_101/many2many:
 
-Many-to-many
-============
+Many-to-many relationships
+==========================
 
 After the many-to-one and one-to-many relationships, let's consider a more complex use case:
 **many-to-many relationships**. These relationships enable *multiple* records in one model to be
@@ -787,9 +792,6 @@ the models. The server framework implements many-to-many relationships by automa
 intermediate (junction) table in the database. This table stores pairs of IDs, each pair
 representing a connection between a record of the first model and a record of the second model. By
 convention, `Many2many` field names end with the `_ids` suffix, like for `One2many` fields.
-
-.. seealso::
-   :ref:`Reference documentation for Many2many fields <reference/fields/many2many>`
 
 .. example::
    In the example below, a many-to-many relationship is established between the `product` model and
@@ -819,6 +821,9 @@ convention, `Many2many` field names end with the `_ids` suffix, like for `One2ma
       - It is not necessary to add a `Many2many` field to both models of the relationship.
       - The optional `relation`, `column1`, and `column2` field arguments allow specifying the name
         of the junction table and of its columns.
+
+.. seealso::
+   :ref:`Reference documentation for Many2many fields <reference/fields/many2many>`
 
 Let's conclude this extension of the model family by allowing to associate multiple description tags
 with each property.

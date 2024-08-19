@@ -197,9 +197,6 @@ the `ir.actions.act_window` model whose key fields include:
 `help`
    An optional help text for the users when there are no records to display.
 
-.. seealso::
-   :doc:`Reference documentation for actions <../../reference/backend/actions>`
-
 .. example::
    The example below defines an action to open existing products in either list or form view.
 
@@ -219,6 +216,9 @@ the `ir.actions.act_window` model whose key fields include:
    .. note::
       The content of the `help` field can be written in different formats thanks to the `type`
       attribute of the :ref:`field <reference/data/field>` data operation.
+
+.. seealso::
+   :doc:`Reference documentation for actions <../../reference/backend/actions>`
 
 As promised, we'll finally get to interact with our real estate properties in the UI. All we need
 now is an action to assign to the menu item.
@@ -315,11 +315,6 @@ structure and content of the view. These components can be structural (like `she
 layout responsive, or `group` that defines column layouts) or semantic (like `field` that displays
 field labels and values).
 
-.. seealso::
-   - :doc:`Reference documentation for view records <../../reference/user_interface/view_records>`
-   - :doc:`Reference documentation for view architectures
-     <../../reference/user_interface/view_architectures>`
-
 .. example::
    The following examples demonstrate how to define simple list, form and search views for the
    `product` model.
@@ -377,6 +372,11 @@ field labels and values).
 
       - The XML structure differs between view types.
       - The `description` field is omitted from the list view because it wouldn't fit visually.
+
+.. seealso::
+   - :doc:`Reference documentation for view records <../../reference/user_interface/view_records>`
+   - :doc:`Reference documentation for view architectures
+     <../../reference/user_interface/view_architectures>`
 
 In :ref:`the previous section <tutorials/server_framework_101/define_window_actions>`, we defined
 the `view_mode` of our action to display `real.estate.property` records in list and form view.
@@ -555,18 +555,11 @@ automatically excluded from searches. You can observe this behavior by deselecti
 :guilabel:`Active` checkbox for one of your property records: you'll notice the record no longer
 appears upon returning to the list view.
 
-.. seealso::
-   :ref:`Reference documentation for the list of reserved field names
-   <reference/orm/fields/reserved>`
-
 To facilitate the browsing of archived properties, we need to create a search view. Unlike list and
 form views, search views are not used to display record data on screen. Instead, they define the
 search behavior and enable users to search on specific fields. They also provide pre-defined
 **filters** that allow for quickly searching with complex queries and grouping records by particular
 fields.
-
-.. seealso::
-   :ref:`Reference documentation for search views <reference/view_architectures/search>`
 
 The most common way to set up filters is through **search domains**. Domains are used to select
 specific records of a model by defining a list of criteria. Each criterion is a triplet in the
@@ -594,7 +587,10 @@ before its operands`.
       ['|', ('category', '=', 'electronics'), '!', '&', ('price', '>=', 1000), ('price', '<', 2000)]
 
 .. seealso::
-   :ref:`Reference documentation for search domains <reference/orm/domains>`
+   - :ref:`Reference documentation for search views <reference/view_architectures/search>`
+   - :ref:`Reference documentation for search domains <reference/orm/domains>`
+   - :ref:`Reference documentation for the list of reserved field names
+     <reference/orm/fields/reserved>`
 
 All the generic search view only allows for is searching on property names; that's the bare minimum.
 Let's enhance the search capabilities.
