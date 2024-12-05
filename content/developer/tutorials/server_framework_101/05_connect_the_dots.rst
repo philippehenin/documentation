@@ -11,7 +11,6 @@ automatic computations, and other model methods.
 .. todo: 6,0,0 to associate tags to properties in data
 .. todo: create (create offer -> offer received state) and write methods
 .. todo: auto-update property state based on received offers state (write)
-.. todo: accepting offer refuses others
 
 .. _tutorials/server_framework_101/computed_fields:
 
@@ -31,20 +30,153 @@ calculation results in views, automating repetitive processes, or assisting user
 In Odoo, computed fields are implemented by defining a Python method and linking it to a field
 declaration using the `compute` argument. This method operates on a **recordset** :dfn:`a collection
 of records from the same model` accessible through the `self` argument. The method must iterate over
-the records to compute and set the field's value for each one.
+the records to compute and set the field's value for each one. Additionally, compute methods must be
+decorated with the :code:`@api.depends()` decorator when they depend on other fields. This decorator
+specifies the fields that trigger an automatic recomputation whenever their values change, ensuring
+that computed fields remain consistent.
+
+.. example::
+   In the example below, the computed `margin`, `is_profitable` and `breadcrumb` fields are added to
+   the `product` model.
+
+   .. code-block:: python
+
+      from odoo import api, fields, models
+
+
+      class Product(models.Model):
+          _name = 'product'
+
+          name = fields.Char(string="Name", required=True)
+          price = fields.Float(string="Sales Price", required=True)
+          cost = fields.Float(string="Manufacturing Cost")
+          margin = fields.Float(string="Profit Margin", compute='_compute_margin')
+          is_profitable = fields.Boolean(string="Profitable", compute='_compute_is_profitable')
+          category_id = fields.Many2one(
+              string="Category", comodel_name='product.category', ondelete='restrict', required=True
+          )
+          breadcrumb = fields.Char(
+              string="Breadcrumb",
+              help="The path to the product. For example: 'Home Decor / Coffee table'",
+              compute='_compute_breadcrumb',
+          )
+
+          @api.depends('price', 'cost')
+          def _compute_margin(self):
+              for product in self:
+                  product.margin = product.price - product.cost
+
+          @api.depends('margin')
+          def _compute_is_profitable(self):
+              for product in self:
+                  product.is_profitable = product.margin > 0
+
+          @api.depends('name', 'category_id.name')
+          def _compute_breadcrumb(self):
+              for product in self:
+                  category = product.category_id
+                  product.breadcrumb = f"{category.name} / {product.name}"
+
+   .. note::
+
+      - Compute methods are referenced using their names as strings in the `compute` field argument,
+        rather than directly linking the method object. This allows placing them after the field
+        declaration.
+      - Model methods should be private :dfn:`prefixed with an underscore` to keep them hidden from
+        the :doc:`external API <../../reference/external_api>`.
+      - Numeric field values default to `0` when not explicitly set.
+      - A compute method can depend on another computed field.
+      - Field values for related models can be accessed via the `Many2one`, `One2many`, or
+        `Many2many` field.
+      - Variables used for relational field values are typically not suffixed with `_id` or `_ids`.
+        While the field itself represents the stored ID(s), the variable holds the corresponding
+        recordset in memory.
 
 .. seealso::
    - :ref:`Reference documentation for computed fields <reference/fields/compute>`
    - :ref:`Reference documentation for recordsets <reference/orm/recordsets>`
+   - :ref:`Coding guidelines on naming and ordering the members of model classes
+     <contributing/coding_guidelines/model_members>`
 
-.. todo: compute: offer deadline
-.. todo: For relational fields, it’s possible to use paths through a field as a dependency: @api.depends('partner_id.name')
-.. todo: methods are private by default, meaning that they can't be called from the presentation
-         tier, only from the business tier. See chap 1
-.. todo: Although relational field names end with the `_id` or `_ids` suffix, variables holding a recordset of such fields
-         are typically not suffixed. That is because, while the field represents the referenced record's id that is stored in the
-         database, the variable is holding the full record in memory.
-.. todo: implement search method
+Our real estate models can benefit from several computed fields to automate common calculations.
+Let's implement them.
+
+.. exercise::
+   Add the following fields to the corresponding models and relevant views:
+
+   - **Total Area** (`real.estate.property`): The sum of the floor and garden areas.
+   - **Expiry Date** (`real.estate.offer`): The start date offset by the validity period.
+   - **Best Offer** (`real.estate.property`): The maximum amount of all offers.
+
+   .. tip::
+      - Import the `odoo.tools.date_utils` package to simplify operations on `Date` fields.
+      - Use the :meth:`mapped <odoo.models.Model.mapped>` method to extract a recordset's field
+        values into a list.
+
+.. spoiler:: Solution
+
+   .. code-block:: python
+      :caption: `real_estate_property.py`
+      :emphasize-lines: 1,8,13,16-27
+
+      from odoo import api, fields, models
+
+      class RealEstateProperty(models.Model):
+          [...]
+          garden_area = fields.Integer(
+              string="Garden Area", help="The garden area excluding the building."
+          )
+          total_area = fields.Integer(string="Total Area", compute='_compute_total_area')
+          [...]
+          offer_ids = fields.One2many(
+              string="Offers", comodel_name='real.estate.offer', inverse_name='property_id'
+          )
+          best_offer_amount = fields.Float(string="Best Offer", compute='_compute_best_offer_amount')
+          tag_ids = fields.Many2many(string="Tags", comodel_name='real.estate.tag')
+
+          @api.depends('floor_area', 'garden_area')
+          def _compute_total_area(self):
+              for property in self:
+                  property.total_area = property.floor_area + property.garden_area
+
+          @api.depends('offer_ids.amount')
+          def _compute_best_offer_amount(self):
+              for property in self:
+                  if property.offer_ids:
+                      property.best_offer_amount = max(property.offer_ids.mapped('amount'))
+                  else:
+                      property.best_offer_amount = 0
+
+   .. code-block:: xml
+      :caption: `real_estate_property_views.xml`
+      :emphasize-lines: 5,15,22
+
+      <record id="real_estate.property_list" model="ir.ui.view">
+          [...]
+              <list>
+                  [...]
+                  <field name="total_area" optional="hide"/>
+              </list>
+          [...]
+      </record>
+
+      <record id="real_estate.property_form" model="ir.ui.view">
+          [...]
+              <group string="Listing Information">
+                  <field name="type_id"/>
+                  <field name="selling_price"/>
+                  <field name="best_offer_amount"/>
+                  <field name="availability_date"/>
+                  <field name="active"/>
+              </group>
+              <group string="Building Specifications">
+                  [...]
+                  <field name="garden_area"/>
+                  <field name="total_area"/>
+                  [...]
+              </group>
+          [...]
+      </record>
 
 .. _tutorials/server_framework_101/inverse_methods:
 
@@ -66,34 +198,70 @@ should be applied to its dependencies.
 
 .. todo: inverse: offer deadline
 
-.. _tutorials/server_framework_101/compute_stored_fields:
+.. _tutorials/server_framework_101/store_computed_fields:
 
 Store computed fields
 ---------------------
 
 As computed fields are calculated on the fly, recalculating their values repeatedly can become
 inefficient, especially when they are frequently accessed or used in models with large datasets.
-**Stored computed fields** address this issue by saving their values in the database and
-automatically updating them only when their dependent data changes. Storing a computed field also
-enables the database to index the field's column, significantly improving query performance for
-large datasets.
+Another consequence is that they cannot be used in search queries by default. **Stored computed
+fields** address both these issues by saving their values in the database and automatically updating
+them only when their dependent data changes. Storing a computed field also enables the database to
+index the field's column, significantly improving query performance for large datasets.
 
 Computed fields can be stored in the database by including the `store=True` argument in their field
-declaration. Additionally, compute methods must always be decorated with the :code:`@api.depends()`
-decorator when they depend on other fields, whether or not the computed field is stored. This
-decorator specifies the fields that trigger an automatic recomputation whenever their values change,
-ensuring that both stored and non-stored computed fields remain consistent, whether stored in the
-database or temporarily cached.
+declaration. The :code:`@api.depends()` decorator ensures that computed fields remain consistent not
+only in the cache, but also when they are stored in the database.
 
 However, storing computed fields should be carefully considered. Every update to a dependency
 triggers a recomputation, which can significantly impact performance on production servers with a
 large number of records.
 
+.. example::
+   store `margin`
+
 .. seealso::
    Reference documentation for the :meth:`@api.depends() <odoo.api.depends>` decorator
 
-.. todo: api.depends should actually always be specified because the non-stored computation is still
-   saved in cache and should be recomputed when a dependency is updated.
+.. _tutorials/server_framework_101/search_methods:
+
+Search computed fields
+----------------------
+
+As mentioned before, computed fields cannot be used in search queries unless they are stored in the
+database. This limitation arises because searches are performed at the database level, which is not
+aware of the existence of non-stored computed fields. However, storing every field that we wish to
+search on would be inefficient. **Search methods** provide a way to overcome this limitation.
+
+To enable searching on a computed field, a Python method must be defined and linked to the field
+declaration using the `search` argument. This method receives the search query's `operator` and
+`value` and should return a search domain that specifies how the query should filter records. The
+domain must be constructed using stored fields only.
+
+.. example::
+   In the example below, a search method is added to allow searching on the `is_profitable` field.
+
+   .. code-block:: python
+
+      from odoo import api, fields, models
+
+
+      class Product(models.Model):
+          _name = 'product'
+
+          margin = fields.Float(string="Profit Margin", compute='_compute_margin', store=True)
+          is_profitable = fields.Boolean(
+              string="Profitable", compute='_compute_is_profitable', search='_search_is_profitable'
+          )
+
+          def _search_is_profitable(self, operator, value):
+              if (operator == '=' and value is True) or (operator == '!=' and value is False):
+                  return [('margin', '>', 0)]
+              elif (operator == '=' and value is False) or (operator == '!=' and value is True):
+                  return [('margin', '<=', 0)]
+              else:
+                  raise NotImplementedError()
 
 .. _tutorials/server_framework_101/related_fields:
 
@@ -134,10 +302,13 @@ are altered. They operate on the in-memory representation of a single-record rec
 through `self`. If field values are modified, the changes are automatically reflected in the UI.
 
 .. seealso::
-   Reference documentation for the :meth:`@api.onchange() <odoo.api.onchange>` decorator
+   - Reference documentation for the :meth:`@api.onchange() <odoo.api.onchange>` decorator
+   - Reference documentation for the :class:`UserError <odoo.exceptions.UserError>` exception
 
 .. todo: raise UserError + translation
-.. todo: if garden checked -> show and compute total area
+.. todo: if garden checked -> show total area
+.. todo: mention that the method is public so it can be called directly by the client.
+.. todo: always return something in public methods as they are part of the :ref:external API and can be called through XML-RPC
 
 .. _tutorials/server_framework_101/constraints:
 
@@ -196,7 +367,9 @@ when a record is created or updated, performing custom validation and raising va
 the constraint is violated.
 
 .. seealso::
-   Reference documentation for the :meth:`@api.constrains <odoo.api.constrains()>` decorator
+   - Reference documentation for the :meth:`@api.constrains <odoo.api.constrains()>` decorator
+   - Reference documentation for the :class:`ValidationError <odoo.exceptions.ValidationError>`
+     exception
 
 .. todo: accept only one offer
 
@@ -234,6 +407,7 @@ logic.
 .. todo: "assign myself as salesperson" action
 .. todo: "view best offer" statbutton
 .. todo: accept/refuse offer buttons
+.. todo: accepting offer refuses others
 .. todo: action name=...
 
 .. _tutorials/server_framework_101/action_type_actions:
@@ -250,8 +424,11 @@ We already saw :ref:`how to link XML-defined window actions to menu items
 a `button` element must be added to the view, with its `type` attribute set to `action`. The `name`
 attribute should reference the XML ID of the action to execute.
 
-.. todo: ref to `reference/view_architectures/form/button`
-.. todo: ref to `reference/view_architectures/form/header`
+.. exercise::
+   .. tip::
+      Rely on the reference documentation for :ref:`action buttons
+      <reference/view_architectures/form/button>` and :ref:`headers
+      <reference/view_architectures/form/header>` in form views.
 
 .. _tutorials/server_framework_101/object_type_actions:
 
@@ -266,15 +443,6 @@ To link a button to a model-defined action, its `type` attribute must be set to 
 `name` attribute must be set to the name of the model method to call when the button is clicked. The
 method receives the current recordset through `self` and should return a dictionary acting as an
 action descriptor.
-
-.. _tutorials/server_framework_101/shell:
-
-Use the interactive shell
-=========================
-
-tmp
-
-.. todo: talk about env.cr.commit()
 
 ----
 

@@ -224,7 +224,6 @@ As promised, we'll finally get to interact with our real estate properties in th
 now is an action to assign to the menu item.
 
 .. exercise::
-
    #. Create and declare a new :file:`actions.xml` file at the root of the `real_estate` module.
    #. Describe a new "Properties" window action that opens `real.estate.property` records in list
       and form views, and assign it to the "Properties" menu item. Be creative with the help text!
@@ -397,12 +396,11 @@ List view
 For a start, the list view could use more fields than just the name.
 
 .. exercise::
-
    #. Create a new :file:`real_estate_property_views.xml` file at the root of the `real_estate`
       module.
    #. Create a custom list view to display the following fields of the `real.estate.property` model
       in the given order: name, state, type, selling price, availability date, floor area, number of
-      bedrooms, presence of a garden, and presence of a garage.
+      bedrooms, presence of a garage, presence of a garden, and garden area.
    #. Make the visibility of the floor area and all following fields optional so that only the floor
       area is visible by default, while the remaining fields are hidden by default and must be
       displayed by accessing the view's column selector (:icon:`oi-settings-adjust` button).
@@ -449,8 +447,9 @@ For a start, the list view could use more fields than just the name.
                       <field name="availability_date"/>
                       <field name="floor_area" optional="show"/>
                       <field name="bedrooms" optional="hide"/>
-                      <field name="has_garden" optional="hide"/>
                       <field name="has_garage" optional="hide"/>
+                      <field name="has_garden" optional="hide"/>
+                      <field name="garden_area" optional="hide"/>
                   </list>
               </field>
           </record>
@@ -463,7 +462,6 @@ Form view
 ---------
 
 .. exercise::
-
    In the :file:`real_estate_property_views.xml` file, create a custom form view to display all
    fields of the `real.estate.property` model in a well-structured manner:
 
@@ -476,7 +474,7 @@ Form view
    - The fields should be grouped in two sections displayed next to each other:
 
      - Listing Information: Type, Selling Price, Availability Date, Active
-     - Building Specifications: Floor Area, Number of Bedrooms, Garden, Garage
+     - Building Specifications: Floor Area, Number of Bedrooms, Garage, Garden, Garden Area
 
    - The description should be displayed at the bottom of the form in its own section, should have
      no label, should have a placeholder, and should take the full width.
@@ -525,8 +523,9 @@ Form view
                           <group string="Building Specifications">
                               <field name="floor_area"/>
                               <field name="bedrooms"/>
-                              <field name="has_garden"/>
                               <field name="has_garage"/>
+                              <field name="has_garden"/>
+                              <field name="garden_area"/>
                           </group>
                       </group>
                       <separator string="Description"/>
@@ -596,7 +595,6 @@ All the generic search view only allows for is searching on property names; that
 Let's enhance the search capabilities.
 
 .. exercise::
-
    #. Create a custom search view with the following features:
 
       - Enable searching on the these fields:
@@ -611,11 +609,11 @@ Let's enhance the search capabilities.
 
         - For Sale: The state is "New" or "Offer Received".
         - Availability Date: Display a list of pre-defined availability date values.
-        - Garden: The property has a garden.
         - Garage: The property has a garage.
+        - Garden: The property has a garden.
         - Archived: The property is archived.
 
-      - Combine selected filters with a logical AND, except for Garden and Garage, which should use
+      - Combine selected filters with a logical AND, except for Garage and Garden, which should use
         OR when both are selected.
       - Enable grouping properties by state and type.
 
@@ -668,8 +666,8 @@ Let's enhance the search capabilities.
                   <separator/>
                   <filter name="filter_availability" date="availability_date"/>
                   <separator/>
-                  <filter name="filter_garden" string="Garden" domain="[('has_garden', '=', True)]"/>
                   <filter name="filter_garage" string="Garage" domain="[('has_garage', '=', True)]"/>
+                  <filter name="filter_garden" string="Garden" domain="[('has_garden', '=', True)]"/>
                   <separator/>
                   <filter name="filter_inactive" string="Archived" domain="[('active', '=', False)]"/>
 

@@ -78,7 +78,6 @@ structure guidelines** that offer several benefits:
    <contributing/coding_guidelines/module_structure/directories>`
 
 .. exercise::
-
    Restructure the `real_estate` module according to the guidelines.
 
    .. tip::
@@ -215,7 +214,7 @@ the referenced record's ID.
    In the example below, the `Selection` field of the `product` model is replaced by a `Many2one`
    field to create a more flexible and scalable model structure.
 
-   .. code-block:: py
+   .. code-block:: python
 
       from odoo import fields, models
 
@@ -249,7 +248,6 @@ let's replace the current `type` field with a many-to-one relationship to a sepa
 managing property types.
 
 .. exercise::
-
    #. Create a new `real.estate.property.type` model.
 
       - Update the :file:`ir.model.access.csv` file to grant all database administrators access to
@@ -281,7 +279,6 @@ managing property types.
       :caption: `real_estate_property_type.py`
 
       from odoo import fields, models
-      from odoo.tools import date_utils
 
 
       class RealEstatePropertyType(models.Model):
@@ -290,7 +287,7 @@ managing property types.
 
           name = fields.Char(string="Name", required=True)
 
-   .. code-block:: py
+   .. code-block:: python
       :caption: `__init__.py`
       :emphasize-lines: 2
 
@@ -372,7 +369,7 @@ managing property types.
 
       </odoo>
 
-   .. code-block:: py
+   .. code-block:: python
       :caption: `__manifest__.py`
       :emphasize-lines: 3,4,7,9
 
@@ -387,7 +384,7 @@ managing property types.
           'views/menus.xml',  # Depends on actions in views.
       ],
 
-   .. code-block:: py
+   .. code-block:: python
       :caption: `real_estate_property.py`
       :emphasize-lines: 1-3
 
@@ -477,7 +474,6 @@ To make our real estate properties more informative, let's add two pieces of inf
 of the property and the salesperson managing the property.
 
 .. exercise::
-
    #. Add the following fields to the `real.estate.property` model:
 
       - Seller (required): The person putting their property on sale; it can be any individual.
@@ -563,7 +559,7 @@ of the property and the salesperson managing the property.
           <field name="seller_id" ref="real_estate.bafien_carpink"/>
       </record>
 
-   .. code-block:: py
+   .. code-block:: python
       :caption: `__manifest__.py`
       :emphasize-lines: 3,5,6
 
@@ -596,7 +592,7 @@ end with the `_ids` suffix, indicating that they allow accessing the IDs of the 
    In the example below, a `One2many` field is added to the `product.category` model to allow quick
    access to the connected products from the product category.
 
-   .. code-block:: py
+   .. code-block:: python
 
       from odoo import fields, models
 
@@ -620,7 +616,6 @@ end with the `_ids` suffix, indicating that they allow accessing the IDs of the 
           )
 
    .. note::
-
       The `One2many` field must reference its `Many2one` counterpart through the `inverse_name`
       argument.
 
@@ -631,14 +626,13 @@ A good use case for a one-to-many relationship in our real estate app would be t
 to a list of offers received from potential buyers.
 
 .. exercise::
-
    #. Create a new `real.estate.offer` model. It should have the following fields:
 
-      - Amount (required): The amount offered to buy the property.
-      - Buyer (required): The person making the offer.
-      - Date (required; default to creation date): When the offer was made.
-      - Validity (default to 7): The number of days before the offer expires.
-      - State (required): Either "Waiting", "Accepted", or "Refused".
+      - **Amount** (required): The amount offered to buy the property.
+      - **Buyer** (required): The person making the offer.
+      - **Date** (required; defaults to the creation date): When the offer was made.
+      - **Validity** (defaults to 7): The number of days before the offer expires.
+      - **State** (required): Either "Waiting", "Accepted", or "Refused".
 
    #. Create a list and form views for the `real.estate.offer` model. It's not necessary to create
       menu items or actions, as offers will be accessible from properties, but feel free to do it
@@ -757,7 +751,7 @@ to a list of offers received from potential buyers.
           'views/menus.xml',  # Depends on actions in views.
       ],
 
-   .. code-block:: py
+   .. code-block:: python
       :caption: `real_estate_property.py`
       :emphasize-lines: 1-3
 
@@ -797,7 +791,7 @@ convention, `Many2many` field names end with the `_ids` suffix, like for `One2ma
    In the example below, a many-to-many relationship is established between the `product` model and
    the `res.partner` model, which is used to represent sellers offering products for sale.
 
-   .. code-block:: py
+   .. code-block:: python
 
       from odoo import fields, models
 
@@ -829,7 +823,6 @@ Let's conclude this extension of the model family by allowing to associate multi
 with each property.
 
 .. exercise::
-
    #. Create a new `real.estate.tag` model. It should have the following fields:
 
       - Name (required): The label of the tag.
